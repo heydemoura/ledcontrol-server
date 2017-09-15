@@ -1,9 +1,39 @@
-var express = require('express');
-var router = express.Router();
+const rpio = require('rpio')
+const GPIOController = require('../controllers/GPIOController')
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
-});
+var pins = {
+  '8': {
+    mode: rpio.OUTPUT,
+    value: rpio.HIGH
+  }, 
+  '10': {
+    mode: rpio.OUTPUT,
+    value: rpio.HIGH
+  }
+};
 
-module.exports = router;
+const gpioController = new GPIOController(pins)
+
+module.exports = app => {
+  app.route('/')
+    .get((req, res) => {
+      console.log(req.query)
+      if (req.query.pin && req.query.pin.length) {
+        responseData = req.query.pin.map(pin => {
+          data = gpioController.getPinState(pin)
+          data.id = pin
+          return data
+        })
+
+        res.status(200).send(responseData)
+      } else {
+        res.status(200).send(gpioController.getPins())
+      }
+    })
+
+  app.route('/:pin')
+    .patch((req, res) => {
+      gpioController.powerToggle(req.params.pin)
+      res.sendStatus(204)
+    })
+}
